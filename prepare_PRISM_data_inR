@@ -1,0 +1,55 @@
+#R code for preparing the PRISM meteorological data after downloading from google earth engine
+
+
+#meteorological data
+
+#setwd('PATH') #path to where all of the meteorological files are stored
+
+library(dplyr)
+library(lubridate)
+
+file_names <- list.files()
+library(data.table)
+
+# Empty list to store data frames
+data_list <- list()
+
+# Loop through the files and read them into data frames
+for (file_name in file_names) {
+  data_list[[file_name]] <- fread(file_name)
+}
+
+first_df <- data_list[[1]]
+
+all<-rbind(data_list[[1]], data_list[[2]], data_list[[3]], data_list[[4]],
+           data_list[[5]], data_list[[6]], data_list[[7]], 
+           data_list[[8]], data_list[[9]], data_list[[10]], data_list[[11]])
+
+all$date<-ymd(all$date_ymd)
+all$month<-month(all$date)
+all$year<-year(all$date)
+
+# Calculate the mean values for 'pr', 'tmmn', and 'tmmx' for each unique
+#combination of 'GEOID', 'month', and 'year'
+
+monthly_avg <- all %>%
+  group_by(GEOID, month, year) %>%
+  summarise(average_pr = mean(ppt),
+            average_tmean = mean(tmean),
+            average_tmax = mean(tmax),
+            average_tmin = mean(tmin),
+            )
+
+write.csv(monthly_avg, "monthly_averages_PRISM_TX.csv")
+
+#subset to the years that will be included in the analysis
+alls<-subset(all, year %in% c(2013, 2014, 2016, 2017))
+#unique combinations by GEOID and month only
+monthly_avg_monthonly <- alls %>%
+  group_by(GEOID, month) %>%
+  summarise(average_pr = mean(ppt),
+            average_tmean = mean(tmean),
+            average_tmax = mean(tmax),
+            average_tmin = mean(tmin),
+  )
+
